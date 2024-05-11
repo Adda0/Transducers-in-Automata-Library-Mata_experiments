@@ -110,7 +110,7 @@ def main():
     args = parser.parse_args(sys.argv[1:])
 
     if args.operation == "projection":
-        output_file.write(f"benchmark,operation,mata-runtime-0,mona-runtime-0,mata-runtime-1,mona-runtime-1\n")
+        output_file.write(f"benchmark,operation,mata-runtime-0,mata-runtime-1,mona-runtime-0,mona-runtime-1\n")
     else:
         output_file.write(f"benchmark,operation,mata-runtime,mona-runtime\n")
     for path in args.path:
