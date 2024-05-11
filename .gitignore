@@ -1,0 +1,14 @@
+**/*.o
+results/*.csv
+
+mata/apply-language
+mata/apply-literal
+mata/composition
+mata/projection
+mata2mona/__pycache__
+
+mona/apply-language
+mona/apply-literal
+mona/composition
+mona/expand_composition_inputs
+mona/projection
