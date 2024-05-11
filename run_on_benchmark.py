@@ -12,7 +12,7 @@ now = datetime.datetime.now()
 now_time = str(now.time()).replace(":", "-").split(".")[0]
 file_name = f"results/raw/{now.date()}-{now_time}.csv"
 output_file = open(file_name, "w+")
-output_file.write(f"benchmark,operation,mata-runtime,mona-runtime")
+output_file.write(f"benchmark,operation,mata-runtime,mona-runtime\n")
 
 
 def run_operation(file, operation, runs: int = 1, TIMEOUT: int = 120):
