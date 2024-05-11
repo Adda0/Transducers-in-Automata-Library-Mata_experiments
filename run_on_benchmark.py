@@ -8,7 +8,7 @@ import datetime
 
 now = datetime.datetime.now()
 now_time = str(now.time()).replace(":", "-").split(".")[0]
-file_name = f"results/{now.date()}-{now_time}.csv"
+file_name = f"results/raw/{now.date()}-{now_time}.csv"
 output_file = open(file_name, "w+")
 
 
