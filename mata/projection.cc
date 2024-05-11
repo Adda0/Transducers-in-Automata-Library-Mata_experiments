@@ -101,6 +101,5 @@ int main(int argc, char *argv[]) {
         timer.log_duration();
         // projected.print_to_mata(std::cout);
     }
-    std::cout << "\n";
     return EXIT_SUCCESS;
 }

@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
     for (unsigned i = 0; i < dfas_orig.size(); i++) {
         std::cout << "," << times[0][i] << "," << times[1][i];
     }
-    std::cout << "\n";
+    // std::cout << "\n";
 
     return 0;
 }
