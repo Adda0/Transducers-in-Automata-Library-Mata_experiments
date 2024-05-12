@@ -12,3 +12,4 @@ mona/apply-literal
 mona/composition
 mona/expand_composition_inputs
 mona/projection
+analysis/.venv
