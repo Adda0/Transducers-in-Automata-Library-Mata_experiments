@@ -21,14 +21,12 @@ def run_operation(file, operation, runs: int = 1, TIMEOUT: int = 120):
         if operation == "composition":
             # Run Mata.
             try:
-                print("Running mata composition")
                 res = subprocess.run(["./mata/composition", f"{file}"], timeout=TIMEOUT, text=True, capture_output=True)
                 output_file.write(f"{res.stdout}")
             except subprocess.TimeoutExpired as e:
                 output_file.write(f",TO")
             # Run Mona.
             try:
-                print("Running mona composition")
                 res = subprocess.run(["./mona_run_composition.sh", f"{file}"], timeout=TIMEOUT, text=True, capture_output=True)
                 output_file.write(f"{res.stdout}")
             except subprocess.TimeoutExpired as e:
