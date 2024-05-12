@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
     //     std::cout << level << " ";
     // }
     // std::cout << "\n";
-    result = project_out(result, levels_to_project_out, jump_mode);
+    // result = project_out(result, levels_to_project_out, jump_mode);
     timer.stop();
 
     timer.log_duration();

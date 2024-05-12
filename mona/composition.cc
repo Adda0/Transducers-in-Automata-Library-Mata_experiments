@@ -183,21 +183,21 @@ DFA *compose(DFA *lhs, DFA *rhs, const unsigned sync_symbol, const unsigned symb
     // Compute product of lhs and rhs
     DFA *result = dfaProduct(lhs, rhs, dfaAND);
 
-    // Project-out every bit of synchronization symbol
-    for (unsigned i = 0; i < symbol_len; i++) {
-        result = dfaProject(result, sync_symbol * symbol_len + i);
-    }
+    // // Project-out every bit of synchronization symbol
+    // for (unsigned i = 0; i < symbol_len; i++) {
+    //     result = dfaProject(result, sync_symbol * symbol_len + i);
+    // }
 
-    // Decrease indices greater than projected indices
-    const unsigned start_index = sync_symbol * symbol_len;
-    const unsigned end_index = (sync_symbol + 1) * symbol_len - 1;
-    unsigned num_of_indices = 3 * symbol_len;
-    bdd_manager* bddm_p = result->bddm;
-    std::vector<unsigned> renaming_project(num_of_indices, 0);
-    for (unsigned i = 0, new_i = 0; i < num_of_indices; i++, new_i += (i < start_index || i > end_index) ? 1 : 0) {
-        renaming_project[i] = new_i;
-    }
-    rename_indices(result, renaming_project);
+    // // Decrease indices greater than projected indices
+    // const unsigned start_index = sync_symbol * symbol_len;
+    // const unsigned end_index = (sync_symbol + 1) * symbol_len - 1;
+    // unsigned num_of_indices = 3 * symbol_len;
+    // bdd_manager* bddm_p = result->bddm;
+    // std::vector<unsigned> renaming_project(num_of_indices, 0);
+    // for (unsigned i = 0, new_i = 0; i < num_of_indices; i++, new_i += (i < start_index || i > end_index) ? 1 : 0) {
+    //     renaming_project[i] = new_i;
+    // }
+    // rename_indices(result, renaming_project);
 
     // assert_indices(result);
     return result;
