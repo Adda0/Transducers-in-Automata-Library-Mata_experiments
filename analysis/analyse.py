@@ -28,28 +28,30 @@ TIMEOUT = 120
 TIMEOUT_VAL = TIMEOUT * 1.1
 TIME_MIN = 0.01
 
+HEADERS = ["method", "min", "max", "mean", "median", "std. dev"]
+ALL_TOOLS = ["mata", "mona"]
 
 
-def table(df):
+def composition_table(df, all_tools, operation):
 
     print(f"time:  {datetime.datetime.now()}")
     print(f"# of formulae: {len(df)}")
 
     summary_times = dict()
-    for col in df.columns:
-        if re.search('-result$', col):
-            summary_times[col] = dict()
-            summary_times[col]['timeouts'] = df[col].isna().sum()
-            df[col] = df[col].str.strip()
+    # for col in df.columns:
+    #     if re.search('-result$', col):
+    #         summary_times[col] = dict()
+    #         summary_times[col]['timeouts'] = df[col].isna().sum()
+    #         df[col] = df[col].str.strip()
             # summary_times[col]['unknowns'] = df[df[col] == "unknown"].shape[0] #[df[col] == "unknown"].shape[0]
 
     # Remove unknowns
     # df = df.drop(df[df[main_tool + "-result"] == "unknown"].index)
-    for tool in all_tools:
-      df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
+    # for tool in all_tools:
+    #   df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
 
     for col in df.columns:
-        if re.search('-runtime$', col):
+        if re.search('-runtime', col):
             summary_times[col] = dict()
             summary_times[col]['max'] = df[col].max()
             summary_times[col]['min'] = df[col].min()
@@ -64,61 +66,158 @@ def table(df):
     tab_interesting = []
     for i in all_tools:
         row = df_summary_times.loc[i + '-runtime']
-        unknown_row = dict(df_summary_times.loc[i + '-result'])
+        # unknown_row = dict(df_summary_times.loc[i + '-result'])
         row_dict = dict(row)
         row_dict.update({'name': i})
         tab_interesting.append([row_dict['name'],
-                                # row_dict['min'],
+                                row_dict['min'],
                                 row_dict['max'],
                                 row_dict['mean'],
                                 row_dict['median'],
                                 row_dict['std'],
-                                unknown_row['timeouts'],
-                                unknown_row["unknowns"]])
+                                # unknown_row['timeouts']
+                                # unknown_row["unknowns"]
+                                ])
 
-    headers = ["method", "max", "mean", "median", "std. dev", "timeouts/errors", "unknowns"]
     print("###################################################################################")
     print("####                                   Table 1                                 ####")
     print("###################################################################################")
-    print(tab.tabulate(tab_interesting, headers=headers, tablefmt="github"))
+    table = tab.tabulate(tab_interesting, headers=HEADERS, tablefmt="github")
+    print(table)
+    table_to_file(tab_interesting, HEADERS, f"{operation}")
     print("\n\n")
 
     # sanitizing NAs
-    for col in df.columns:
-        if re.search('-runtime$', col):
-            df[col].fillna(TIMEOUT_VAL, inplace=True)
-            df.loc[df[col] < TIME_MIN, col] = TIME_MIN  # to remove 0 (in case of log graph)
+    # for col in df.columns:
+    #     if re.search('-runtime$', col):
+    #         df[col].fillna(TIMEOUT_VAL, inplace=True)
+    #         df.loc[df[col] < TIME_MIN, col] = TIME_MIN  # to remove 0 (in case of log graph)
 
 
-    # comparing wins/loses
-    compare_methods = []
-    for t in all_tools:
-      if t == main_tool:
-        continue
-      compare_methods.append((main_tool + "-runtime", t + "-runtime"))
+    # # comparing wins/loses
+    # compare_methods = []
+    # for t in all_tools:
+    #   if t == main_tool:
+    #     continue
+    #   compare_methods.append((main_tool + "-runtime", t + "-runtime"))
 
 
     # compare_methods = [("noodler-runtime", "z3-runtime"),
     #                    ("noodler-runtime", "cvc4-runtime")
     #                   ]
 
-    tab_wins = []
-    for left, right in compare_methods:
-        left_over_right = df[df[left] < df[right]]
-        right_timeouts = left_over_right[left_over_right[right] == TIMEOUT_VAL]
+    # tab_wins = []
+    # for left, right in compare_methods:
+    #     left_over_right = df[df[left] < df[right]]
+    #     right_timeouts = left_over_right[left_over_right[right] == TIMEOUT_VAL]
 
-        right_over_left = df[df[left] > df[right]]
-        left_timeouts = right_over_left[right_over_left[left] == TIMEOUT_VAL]
+    #     right_over_left = df[df[left] > df[right]]
+    #     left_timeouts = right_over_left[right_over_left[left] == TIMEOUT_VAL]
 
-        tab_wins.append([right, len(left_over_right), len(right_timeouts), len(right_over_left), len(left_timeouts)])
+    #     tab_wins.append([right, len(left_over_right), len(right_timeouts), len(right_over_left), len(left_timeouts)])
 
-    headers_wins = ["method", "wins", "wins-timeouts", "loses", "loses-timeouts"]
-    print("######################################################################")
-    print("####                             Table 2                          ####")
-    print("######################################################################")
-    print(tab.tabulate(tab_wins, headers=headers_wins, tablefmt="github"))
-    #table_to_file(tab_wins, headers_wins, out_prefix + "_table1right")
+    # headers_wins = ["method", "wins", "wins-timeouts", "loses", "loses-timeouts"]
+    # print("######################################################################")
+    # print("####                             Table 2                          ####")
+    # print("######################################################################")
+    # print(tab.tabulate(tab_wins, headers=headers_wins, tablefmt="github"))
+    # #table_to_file(tab_wins, headers_wins, out_prefix + "_table1right")
+    # print("\n\n")
+
+
+
+def projection_table(df, all_tools):
+
+    print(f"time:  {datetime.datetime.now()}")
+    print(f"# of formulae: {len(df)}")
+
+    summary_times = dict()
+    # for col in df.columns:
+    #     if re.search('-result$', col):
+    #         summary_times[col] = dict()
+    #         summary_times[col]['timeouts'] = df[col].isna().sum()
+    #         df[col] = df[col].str.strip()
+            # summary_times[col]['unknowns'] = df[df[col] == "unknown"].shape[0] #[df[col] == "unknown"].shape[0]
+
+    # Remove unknowns
+    # df = df.drop(df[df[main_tool + "-result"] == "unknown"].index)
+    # for tool in all_tools:
+    #   df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
+
+    for col in df.columns:
+        if re.search('-runtime-', col):
+            summary_times[col] = dict()
+            summary_times[col]['max'] = df[col].max()
+            summary_times[col]['min'] = df[col].min()
+            summary_times[col]['mean'] = df[col].mean()
+            summary_times[col]['median'] = df[col].median()
+            summary_times[col]['std'] = df[col].std()
+
+    df_summary_times = pd.DataFrame(summary_times).transpose()
+
+
+
+    tab_interesting = []
+    for i in all_tools:
+        for tape in range(2):
+            row = df_summary_times.loc[i + '-runtime-' + str(tape)]
+            # unknown_row = dict(df_summary_times.loc[i + '-result'])
+            row_dict = dict(row)
+            row_dict.update({'name': i + '-' + str(tape)})
+            tab_interesting.append([row_dict['name'],
+                                    row_dict['min'],
+                                    row_dict['max'],
+                                    row_dict['mean'],
+                                    row_dict['median'],
+                                    row_dict['std'],
+                                    # unknown_row['timeouts']
+                                    # unknown_row["unknowns"]
+                                    ])
+
+    print("###################################################################################")
+    print("####                                   Table 1                                 ####")
+    print("###################################################################################")
+    table = tab.tabulate(tab_interesting, headers=HEADERS, tablefmt="github")
+    print(table)
+    table_to_file(tab_interesting, HEADERS, "projection")
     print("\n\n")
+
+    # sanitizing NAs
+    # for col in df.columns:
+    #     if re.search('-runtime$', col):
+    #         df[col].fillna(TIMEOUT_VAL, inplace=True)
+    #         df.loc[df[col] < TIME_MIN, col] = TIME_MIN  # to remove 0 (in case of log graph)
+
+
+    # # comparing wins/loses
+    # compare_methods = []
+    # for t in all_tools:
+    #   if t == main_tool:
+    #     continue
+    #   compare_methods.append((main_tool + "-runtime", t + "-runtime"))
+
+
+    # compare_methods = [("noodler-runtime", "z3-runtime"),
+    #                    ("noodler-runtime", "cvc4-runtime")
+    #                   ]
+
+    # tab_wins = []
+    # for left, right in compare_methods:
+    #     left_over_right = df[df[left] < df[right]]
+    #     right_timeouts = left_over_right[left_over_right[right] == TIMEOUT_VAL]
+
+    #     right_over_left = df[df[left] > df[right]]
+    #     left_timeouts = right_over_left[right_over_left[left] == TIMEOUT_VAL]
+
+    #     tab_wins.append([right, len(left_over_right), len(right_timeouts), len(right_over_left), len(left_timeouts)])
+
+    # headers_wins = ["method", "wins", "wins-timeouts", "loses", "loses-timeouts"]
+    # print("######################################################################")
+    # print("####                             Table 2                          ####")
+    # print("######################################################################")
+    # print(tab.tabulate(tab_wins, headers=headers_wins, tablefmt="github"))
+    # #table_to_file(tab_wins, headers_wins, out_prefix + "_table1right")
+    # print("\n\n")
 
 
 
@@ -150,7 +249,9 @@ def read_file_no_nan(filename):
 
 
 # For printing scatter plots
-def scatter_plot(df, xcol, ycol, domain, xname=None, yname=None, log=False, width=6, height=6, clamp=True, tickCount=5):
+def scatter_plot(
+    df, xcol, ycol, domain, operation: str | None = None, xname=None, yname=None, log=False, width=6, height=6, clamp=True, tickCount=5,
+):
     assert len(domain) == 2
 
     POINT_SIZE = 1.0
@@ -175,7 +276,11 @@ def scatter_plot(df, xcol, ycol, domain, xname=None, yname=None, log=False, widt
                       color="source"
                       )
     scatter += p9.geom_point(size=POINT_SIZE, na_rm=True)
-    scatter += p9.labs(x=xname, y=yname)
+    args = {}
+    if operation:
+        args["title"] = operation.replace('_', ' ').title()
+    scatter += p9.labs(x=xname, y=yname, **args
+    )
     scatter += p9.theme(legend_key_width=2)
     scatter += p9.scale_color_hue(l=0.4, s=0.9, h=0.1)
 
@@ -232,212 +337,69 @@ def matrix_plot(list_of_plots, cols):
 
 # table to LaTeX file
 def table_to_file(table, headers, out_file):
-    with open(f"plots/{out_file}.tex", mode='w') as fl:
+    with open(f"plots/{out_file}_table.tex", mode='w') as fl:
         print(tab.tabulate(table, headers=headers, tablefmt="latex"), file=fl)
 
-# generate evaluation
-def gen_evaluation(df, main_tool, all_tools):
 
-    print(f"time:  {datetime.datetime.now()}")
-    print(f"# of formulae: {len(df)}")
+def projection():
+    webapp_projection_df = read_file("../results/processed/webapp_projection.csv")
+    transducer_plus_projection_df = read_file("../results/processed/transducer-plus_projection.csv")
 
-    summary_times = dict()
-    for col in df.columns:
-        if re.search('-result$', col):
-            summary_times[col] = dict()
-            summary_times[col]['timeouts'] = df[col].isna().sum()
-            df[col] = df[col].str.strip()
-            summary_times[col]['unknowns'] = df[df[col] == "unknown"].shape[0] #[df[col] == "unknown"].shape[0]
+    webapp_projection_df = webapp_projection_df.groupby(["benchmark", "operation"], as_index=False).mean()
+    webapp_projection_df["source"] = "webapp"
 
-    # Remove unknowns
-    # df = df.drop(df[df[main_tool + "-result"] == "unknown"].index)
-    for tool in all_tools:
-      df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
+    transducer_plus_projection_df = transducer_plus_projection_df.groupby(["benchmark", "operation"], as_index=False).mean()
+    transducer_plus_projection_df["source"] = "transducer plus"
 
-    for col in df.columns:
-        if re.search('-runtime$', col):
-            summary_times[col] = dict()
-            summary_times[col]['max'] = df[col].max()
-            summary_times[col]['min'] = df[col].min()
-            summary_times[col]['mean'] = df[col].mean()
-            summary_times[col]['median'] = df[col].median()
-            summary_times[col]['std'] = df[col].std()
+    print(webapp_projection_df)
+    print(transducer_plus_projection_df)
 
-    df_summary_times = pd.DataFrame(summary_times).transpose()
+    projection_df = pd.concat([webapp_projection_df, transducer_plus_projection_df], ignore_index=True)
+    print(projection_df)
+    # projection_df = webapp_projection_df.append(transducer_plus_projection_df, ignore_index=True)
 
+    scatter = scatter_plot(
+        projection_df, "mata-runtime-0", "mona-runtime-0", [0, 15_000], xname="Mata", yname="Mona",
+        log=False, width=6, height=6, clamp=True, tickCount=5, operation="projection"
+    )
+    # scatter.show()
+    scatter.save(filename="plots/projection_scatter_0.pdf", dpi=1000)
 
+    max_runtime = max(projection_df["mata-runtime-1"].max(), projection_df["mona-runtime-1"].max())
+    scatter = scatter_plot(
+        projection_df, "mata-runtime-1", "mona-runtime-1", [0, 100_000], xname="Mata", yname="Mona",
+        log=False, width=6, height=6, clamp=True, tickCount=5, operation="projection"
+    )
+    # scatter.show()
+    scatter.save(filename="plots/projection_scatter_1.pdf", dpi=1000)
 
-    tab_interesting = []
-    for i in all_tools:
-        row = df_summary_times.loc[i + '-runtime']
-        unknown_row = dict(df_summary_times.loc[i + '-result'])
-        row_dict = dict(row)
-        row_dict.update({'name': i})
-        tab_interesting.append([row_dict['name'],
-                                # row_dict['min'],
-                                row_dict['max'],
-                                row_dict['mean'],
-                                row_dict['median'],
-                                row_dict['std'],
-                                unknown_row['timeouts'],
-                                unknown_row["unknowns"]])
+    projection_table(projection_df, ALL_TOOLS)
 
-    headers = ["method", "max", "mean", "median", "std. dev", "timeouts/errors", "unknowns"]
-    print("###################################################################################")
-    print("####                                   Table 1                                 ####")
-    print("###################################################################################")
-    print(tab.tabulate(tab_interesting, headers=headers, tablefmt="github"))
-    print("\n\n")
+def composition(operation):
+    webapp_df = read_file(f"../results/processed/webapp_{operation}.csv")
+    transducer_plus_df = read_file(f"../results/processed/transducer-plus_{operation}.csv")
 
-    # sanitizing NAs
-    for col in df.columns:
-        if re.search('-runtime$', col):
-            df[col].fillna(TIMEOUT_VAL, inplace=True)
-            df.loc[df[col] < TIME_MIN, col] = TIME_MIN  # to remove 0 (in case of log graph)
+    webapp_df = webapp_df.groupby(["benchmark", "operation"], as_index=False).mean()
+    webapp_df["source"] = "webapp"
 
+    transducer_plus_df = transducer_plus_df.groupby(["benchmark", "operation"], as_index=False).mean()
+    transducer_plus_df["source"] = "transducer plus"
 
-    # comparing wins/loses
-    compare_methods = []
-    for t in all_tools:
-      if t == main_tool:
-        continue
-      compare_methods.append((main_tool + "-runtime", t + "-runtime"))
+    print(webapp_df)
+    print(transducer_plus_df)
 
+    df = pd.concat([webapp_df, transducer_plus_df], ignore_index=True)
+    print(df)
 
-    # compare_methods = [("noodler-runtime", "z3-runtime"),
-    #                    ("noodler-runtime", "cvc4-runtime")
-    #                   ]
+    max_runtime = max(df["mata-runtime"].max(), df["mona-runtime"].max())
+    scatter = scatter_plot(
+        df, "mata-runtime", "mona-runtime", [0, max_runtime], xname="Mata", yname="Mona",
+        log=False, width=6, height=6, clamp=True, tickCount=5, operation=operation
+    )
+    # scatter.show()
+    scatter.save(filename=f"plots/{operation}_scatter.pdf", dpi=1000)
 
-    tab_wins = []
-    for left, right in compare_methods:
-        left_over_right = df[df[left] < df[right]]
-        right_timeouts = left_over_right[left_over_right[right] == TIMEOUT_VAL]
-
-        right_over_left = df[df[left] > df[right]]
-        left_timeouts = right_over_left[right_over_left[left] == TIMEOUT_VAL]
-
-        tab_wins.append([right, len(left_over_right), len(right_timeouts), len(right_over_left), len(left_timeouts)])
-
-    headers_wins = ["method", "wins", "wins-timeouts", "loses", "loses-timeouts"]
-    print("######################################################################")
-    print("####                             Table 2                          ####")
-    print("######################################################################")
-    print(tab.tabulate(tab_wins, headers=headers_wins, tablefmt="github"))
-    #table_to_file(tab_wins, headers_wins, out_prefix + "_table1right")
-    print("\n\n")
-
-    print("##############    other claimed results    ###############")
-
-    ############# the best solution ##########
-    # df['other_min-runtime'] = df[
-    #     ['cvc4-runtime',]].min(axis=1)
-
-
-    to_cmp2 = []
-    for t in all_tools:
-      if t == main_tool:
-        continue
-      to_cmp2.append({'x': main_tool, 'y': t,
-                'xname': NOODLER, 'yname': t,
-                'max': TIMEOUT_VAL, 'tickCount': 3})
-
-    # to_cmp2 = [{'x': "noodler", 'y': "cvc4",
-    #             'xname': 'Noodler', 'yname': 'CVC4',
-    #             'max': TIMEOUT_VAL, 'tickCount': 3},
-    #            {'x': "noodler", 'y': "z3",
-    #             'xname': 'Noodler', 'yname': 'Z3',
-    #             'max': TIMEOUT_VAL, 'tickCount': 3}
-    #           ]
-
-    # add fields where not present
-    for params in to_cmp2:
-        if 'xname' not in params:
-            params['xname'] = None
-        if 'yname' not in params:
-            params['yname'] = None
-        if 'max' not in params:
-            params['max'] = TIMEOUT_VAL
-        if 'tickCount' not in params:
-            params['tickCount'] = 5
-        if 'filename' not in params:
-            params['filename'] = "/home/fig_" + params['x'] + "_vs_" + params['y'] + ".pdf"
-
-    size = 7
-    plot_list = [(params['x'],
-                  params['y'],
-                  params['filename'],
-                  scatter_plot(df,
-                               xcol=params['x'] + '-runtime',
-                               ycol=params['y'] + '-runtime',
-                               xname=params['xname'], yname=params['yname'],
-                               domain=[TIME_MIN, params['max']],
-                               tickCount=params['tickCount'],
-                               log=True, width=size+2, height=size)) for params
-                 in to_cmp2]
-
-    print("\n\n")
-    print("Generating plots...")
-    for x, y, filename, plot in plot_list:
-        #filename = f"plots/{out_prefix}_{filename}.pdf"
-        print(f"plotting x: {x}, y: {y}... saving to {filename}")
-        # plot.save(filename, scale_factor=2)
-        plot.save(filename=filename, dpi=1000)
-        print(plot)
-
-    # return benchmarks solvable only by 'engine'
-    # def only_solves(df, engine):
-    #     # select those where engine finishes
-    #     res = df[df[engine + '-runtime'] != TIMEOUT_VAL]
-    #     for col in res.columns:
-    #         if re.search('-runtime$', col) and not re.search(engine, col):
-    #             res = res[res[col] == TIMEOUT_VAL]
-
-    #     return res
-
-
-    # engines = ["z3",
-    #            "cvc4",
-    #            "noodler"
-    #           ]
-
-    # for i in all_tools:
-    #     i_only_solves = only_solves(df, i)
-    #     print(f"only {i} = " + str(len(i_only_solves)))
-    #     if len(i_only_solves) > 0:
-    #         print()
-    #         print(tab.tabulate(i_only_solves, headers='keys'))
-    #         print()
-
-    def none_solves(df):
-        # select those where engine finishes
-        res = df
-        for col in res.columns:
-            if re.search('-runtime$', col):
-                res = res[res[col] == TIMEOUT_VAL]
-
-        return res
-
-    unsolvable = none_solves(df)
-    #print("unsolvable: " + str(len(unsolvable)))
-    #print(tab.tabulate(unsolvable, headers='keys'))
-    #print("\n\n\n\n\n")
-
-def get_unknowns(df):
-  pt = df#[["name", NOODLER+"-result"]]
-  pt = pt[(pt[NOODLER+"-result"].str.strip() == 'unknown')]
-  return pt
-def sanity_check(df, compare_with):
-  pt = df#[["name", compare_with+"-result", NOODLER+"-result"]]
-  pt = pt[((pt[NOODLER+"-result"].str.strip() == 'sat') & (pt[compare_with+"-result"].str.strip() == 'unsat') | (pt[NOODLER+"-result"].str.strip() == 'unsat') & (pt[compare_with+"-result"].str.strip() == 'sat'))]
-  return pt
-def check_for_errors(df):
-  pt = df#[["name", NOODLER+"-result"]]
-  pt = pt[((pt[NOODLER+"-result"].str.strip() != 'sat') & (pt[NOODLER+"-result"].str.strip() != 'unsat') & (pt[NOODLER+"-result"].str.strip() != 'unknown') & (pt[NOODLER+"-result"].str.strip() != 'TO'))]
-  return pt
-def get_timeouts(df):
-  pt = df#[["name", NOODLER+"-result"]]
-  pt = pt[(pt[NOODLER+"-result"].str.strip() == 'TO')]
-  return pt
+    composition_table(df, ALL_TOOLS, operation)
 
 
 
@@ -455,32 +417,10 @@ def main():
                         help="Path to the CSV file of the results of the experiments.")
     args = parser.parse_args(sys.argv[1:])
 
-    webapp_projection_df = read_file("../results/processed/webapp_projection.csv")
-
-    webapp_projection_df = webapp_projection_df.groupby(["benchmark", "operation"], as_index=False).min()
-    webapp_projection_df["source"] = "webapp"
-
-    print(webapp_projection_df)
-
-    scatter = scatter_plot(
-        webapp_projection_df, "mata-runtime-0", "mona-runtime-0", [0, 15_000], xname="Mata", yname="Mona",
-        log=False, width=6, height=6, clamp=True, tickCount=5
-    )
-    scatter.show()
-    scatter.save(filename="projection_scatter_0.pdf", dpi=1000)
-
-    max_runtime = max(webapp_projection_df["mata-runtime-1"].max(), webapp_projection_df["mona-runtime-1"].max())
-
-    scatter = scatter_plot(
-        webapp_projection_df, "mata-runtime-1", "mona-runtime-1", [0, max_runtime * 1.1], xname="Mata", yname="Mona",
-        log=False, width=6, height=6, clamp=True, tickCount=5
-    )
-    scatter.show()
-    scatter.save(filename="projection_scatter_1.pdf", dpi=1000)
-
-
-
-
+    projection()
+    # composition("composition")
+    composition("apply_literal")
+    composition("apply_language")
 
 
 if __name__ == "__main__":
