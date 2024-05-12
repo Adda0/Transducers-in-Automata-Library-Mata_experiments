@@ -414,7 +414,7 @@ def composition(operation):
 
     max_runtime = max(df["mata-runtime"].max(), df["mona-runtime"].max())
     scatter = scatter_plot(
-        df, "mata-runtime", "mona-runtime", [0, max_runtime], xname="Mata", yname="Mona",
+        df, "mata-runtime", "mona-runtime", [0, max_runtime], xname="Mata [ms]", yname="Mona [ms]",
         title=f"{operation.replace('_', ' ').title()}", log=False, width=12, height=6, clamp=True, tickCount=5, operation=operation
     )
     # scatter.show()
@@ -441,7 +441,7 @@ def main():
     projection()
     composition("composition")
     # composition("apply_literal")
-    # composition("apply_language")
+    composition("apply_language")
 
 
 if __name__ == "__main__":
