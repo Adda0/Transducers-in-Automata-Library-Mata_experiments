@@ -250,7 +250,7 @@ def read_file_no_nan(filename):
 
 # For printing scatter plots
 def scatter_plot(
-    df, xcol, ycol, domain, operation: str | None = None, xname=None, yname=None, log=False, width=6, height=6, clamp=True, tickCount=5,
+    df, xcol, ycol, domain, operation: str | None = None, xname=None, yname=None, log=False, width=6, height=6, clamp=True, tickCount=5, title = None, tick_scale= None
 ):
     assert len(domain) == 2
 
@@ -263,7 +263,10 @@ def scatter_plot(
         yname = ycol
 
     # formatter for axes' labels
-    ax_formatter = mizani.custom_format('{:n}')
+    if tick_scale:
+        ax_formatter = mizani.custom_format('{:n}' + f'/ {tick_scale}')
+    else:
+        ax_formatter = mizani.custom_format('{:n}')
 
     if clamp:  # clamp overflowing values if required
         df = df.copy(deep=True)
@@ -273,12 +276,15 @@ def scatter_plot(
     # generate scatter plot
     scatter = p9.ggplot(df)
     scatter += p9.aes(x=xcol, y=ycol,
-                      color="source"
+                      color="Benchmark"
                       )
     scatter += p9.geom_point(size=POINT_SIZE, na_rm=True)
     args = {}
-    if operation:
-        args["title"] = operation.replace('_', ' ').title()
+    if title:
+        args["title"] = title
+    elif operation:
+        args["title"] = operation.replace('_', ' ').capitalize()
+
     scatter += p9.labs(x=xname, y=yname, **args
     )
     scatter += p9.theme(legend_key_width=2)
@@ -346,10 +352,10 @@ def projection():
     transducer_plus_projection_df = read_file("../results/processed/transducer-plus_projection.csv")
 
     webapp_projection_df = webapp_projection_df.groupby(["benchmark", "operation"], as_index=False).mean()
-    webapp_projection_df["source"] = "webapp"
+    webapp_projection_df["Benchmark"] = "webapp"
 
     transducer_plus_projection_df = transducer_plus_projection_df.groupby(["benchmark", "operation"], as_index=False).mean()
-    transducer_plus_projection_df["source"] = "transducer plus"
+    transducer_plus_projection_df["Benchmark"] = "transducer plus"
 
     print(webapp_projection_df)
     print(transducer_plus_projection_df)
@@ -360,7 +366,8 @@ def projection():
 
     scatter = scatter_plot(
         projection_df, "mata-runtime-0", "mona-runtime-0", [0, 15_000], xname="Mata", yname="Mona",
-        log=False, width=6, height=6, clamp=True, tickCount=5, operation="projection"
+        title="Projection to tape 1", log=False, width=12, height=6, clamp=True, tickCount=5, operation="projection",
+        tick_scale=1000
     )
     # scatter.show()
     scatter.save(filename="plots/projection_scatter_0.pdf", dpi=1000)
@@ -368,7 +375,8 @@ def projection():
     max_runtime = max(projection_df["mata-runtime-1"].max(), projection_df["mona-runtime-1"].max())
     scatter = scatter_plot(
         projection_df, "mata-runtime-1", "mona-runtime-1", [0, 100_000], xname="Mata", yname="Mona",
-        log=False, width=6, height=6, clamp=True, tickCount=5, operation="projection"
+        title="Projection to tape 0" , log=False, width=12, height=6, clamp=True, tickCount=5, operation="projection",
+        tick_scale=1000
     )
     # scatter.show()
     scatter.save(filename="plots/projection_scatter_1.pdf", dpi=1000)
@@ -376,14 +384,14 @@ def projection():
     projection_table(projection_df, ALL_TOOLS)
 
 def composition(operation):
-    webapp_df = read_file(f"../results/processed/webapp_{operation}.csv")
-    transducer_plus_df = read_file(f"../results/processed/transducer-plus_{operation}.csv")
+    webapp_df = read_file(f"../results/processed/webapp_{operation}_2.csv")
+    transducer_plus_df = read_file(f"../results/processed/transducer-plus_{operation}_2.csv")
 
     webapp_df = webapp_df.groupby(["benchmark", "operation"], as_index=False).mean()
-    webapp_df["source"] = "webapp"
+    webapp_df["Benchmark"] = "webapp"
 
     transducer_plus_df = transducer_plus_df.groupby(["benchmark", "operation"], as_index=False).mean()
-    transducer_plus_df["source"] = "transducer plus"
+    transducer_plus_df["Benchmark"] = "transducer plus"
 
     print(webapp_df)
     print(transducer_plus_df)
@@ -394,7 +402,7 @@ def composition(operation):
     max_runtime = max(df["mata-runtime"].max(), df["mona-runtime"].max())
     scatter = scatter_plot(
         df, "mata-runtime", "mona-runtime", [0, max_runtime], xname="Mata", yname="Mona",
-        log=False, width=6, height=6, clamp=True, tickCount=5, operation=operation
+        title=f"{operation.replace('_', ' ').title()}", log=False, width=12, height=6, clamp=True, tickCount=5, operation=operation
     )
     # scatter.show()
     scatter.save(filename=f"plots/{operation}_scatter.pdf", dpi=1000)
@@ -413,13 +421,13 @@ def main():
         prog='Analyse experiment results',
         description='Analyse results of experiments.'
     )
-    parser.add_argument('results_file', action="store", metavar="RESULTS.csv",
-                        help="Path to the CSV file of the results of the experiments.")
+    # parser.add_argument('results_file', action="store", metavar="RESULTS.csv",
+    #                     help="Path to the CSV file of the results of the experiments.")
     args = parser.parse_args(sys.argv[1:])
 
     projection()
     # composition("composition")
-    composition("apply_literal")
+    # composition("apply_literal")
     composition("apply_language")
 
 
