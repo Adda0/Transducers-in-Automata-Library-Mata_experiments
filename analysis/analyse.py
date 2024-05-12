@@ -15,7 +15,7 @@ import re as re
 import tabulate as tab
 import plotnine as p9
 import math
-import mizani.formatters as mizani
+import mizani.labels as mizani
 import warnings
 
 # from __future__ import annotations
@@ -28,7 +28,7 @@ TIMEOUT = 120
 TIMEOUT_VAL = TIMEOUT * 1.1
 TIME_MIN = 0.01
 
-HEADERS = ["method", "min", "max", "mean", "median", "std. dev"]
+HEADERS = ["method", "min", "max", "mean", "q(0.25)", "median", "q(0.75)", "std. dev"]
 ALL_TOOLS = ["mata", "mona"]
 
 
@@ -56,7 +56,9 @@ def composition_table(df, all_tools, operation):
             summary_times[col]['max'] = df[col].max()
             summary_times[col]['min'] = df[col].min()
             summary_times[col]['mean'] = df[col].mean()
+            summary_times[col]['q_025'] = df[col].quantile(0.25)
             summary_times[col]['median'] = df[col].median()
+            summary_times[col]['q_075'] = df[col].quantile(0.75)
             summary_times[col]['std'] = df[col].std()
 
     df_summary_times = pd.DataFrame(summary_times).transpose()
@@ -73,7 +75,9 @@ def composition_table(df, all_tools, operation):
                                 row_dict['min'],
                                 row_dict['max'],
                                 row_dict['mean'],
+                                row_dict['q_025'],
                                 row_dict['median'],
+                                row_dict['q_075'],
                                 row_dict['std'],
                                 # unknown_row['timeouts']
                                 # unknown_row["unknowns"]
@@ -150,7 +154,9 @@ def projection_table(df, all_tools):
             summary_times[col]['max'] = df[col].max()
             summary_times[col]['min'] = df[col].min()
             summary_times[col]['mean'] = df[col].mean()
+            summary_times[col]['q_025'] = df[col].quantile(0.25)
             summary_times[col]['median'] = df[col].median()
+            summary_times[col]['q_075'] = df[col].quantile(0.75)
             summary_times[col]['std'] = df[col].std()
 
     df_summary_times = pd.DataFrame(summary_times).transpose()
@@ -168,7 +174,9 @@ def projection_table(df, all_tools):
                                     row_dict['min'],
                                     row_dict['max'],
                                     row_dict['mean'],
+                                    row_dict['q_025'],
                                     row_dict['median'],
+                                    row_dict['q_075'],
                                     row_dict['std'],
                                     # unknown_row['timeouts']
                                     # unknown_row["unknowns"]
@@ -177,7 +185,7 @@ def projection_table(df, all_tools):
     print("###################################################################################")
     print("####                                   Table 1                                 ####")
     print("###################################################################################")
-    table = tab.tabulate(tab_interesting, headers=HEADERS, tablefmt="github")
+    table = tab.tabulate(tab_interesting, headers=HEADERS, tablefmt="github", floatfmt=".2f")
     print(table)
     table_to_file(tab_interesting, HEADERS, "projection")
     print("\n\n")
@@ -232,6 +240,9 @@ def read_file(filename):
         # na_values=['TO', 'MISSING'],
         # na_values=['TO'],
         )
+    for column in df_loc.columns:
+        if "runtime" in column:
+            df_loc[column] = df_loc[column] / 1_000
     return df_loc
 
 # For reading in files
@@ -263,10 +274,12 @@ def scatter_plot(
         yname = ycol
 
     # formatter for axes' labels
-    if tick_scale:
-        ax_formatter = mizani.custom_format('{:n}' + f'/ {tick_scale}')
-    else:
-        ax_formatter = mizani.custom_format('{:n}')
+    # if tick_scale:
+    ax_formatter = mizani.custom_format('{:n}')
+        # ax_formatter = mizani.label_timedelta(units='us')
+    # else:
+        # ax_formatter = mizani.label_timedelta(units='us')
+    # ax_formatter = mizani.custom_format(lambda x: f"{(result:=/1000)}")
 
     if clamp:  # clamp overflowing values if required
         df = df.copy(deep=True)
@@ -344,7 +357,7 @@ def matrix_plot(list_of_plots, cols):
 # table to LaTeX file
 def table_to_file(table, headers, out_file):
     with open(f"plots/{out_file}_table.tex", mode='w') as fl:
-        print(tab.tabulate(table, headers=headers, tablefmt="latex"), file=fl)
+        print(tab.tabulate(table, headers=headers, tablefmt="latex", floatfmt=".2f"), file=fl)
 
 
 def projection():
@@ -365,7 +378,7 @@ def projection():
     # projection_df = webapp_projection_df.append(transducer_plus_projection_df, ignore_index=True)
 
     scatter = scatter_plot(
-        projection_df, "mata-runtime-0", "mona-runtime-0", [0, 15_000], xname="Mata", yname="Mona",
+        projection_df, "mata-runtime-0", "mona-runtime-0", [0, 15], xname="Mata [ms]", yname="Mona [ms]",
         title="Projection to tape 1", log=False, width=12, height=6, clamp=True, tickCount=5, operation="projection",
         tick_scale=1000
     )
@@ -374,7 +387,7 @@ def projection():
 
     max_runtime = max(projection_df["mata-runtime-1"].max(), projection_df["mona-runtime-1"].max())
     scatter = scatter_plot(
-        projection_df, "mata-runtime-1", "mona-runtime-1", [0, 100_000], xname="Mata", yname="Mona",
+        projection_df, "mata-runtime-1", "mona-runtime-1", [0, 100], xname="Mata [ms]", yname="Mona [ms]",
         title="Projection to tape 0" , log=False, width=12, height=6, clamp=True, tickCount=5, operation="projection",
         tick_scale=1000
     )
@@ -384,8 +397,8 @@ def projection():
     projection_table(projection_df, ALL_TOOLS)
 
 def composition(operation):
-    webapp_df = read_file(f"../results/processed/webapp_{operation}_2.csv")
-    transducer_plus_df = read_file(f"../results/processed/transducer-plus_{operation}_2.csv")
+    webapp_df = read_file(f"../results/processed/webapp_{operation}.csv")
+    transducer_plus_df = read_file(f"../results/processed/transducer-plus_{operation}.csv")
 
     webapp_df = webapp_df.groupby(["benchmark", "operation"], as_index=False).mean()
     webapp_df["Benchmark"] = "webapp"
@@ -426,9 +439,9 @@ def main():
     args = parser.parse_args(sys.argv[1:])
 
     projection()
-    # composition("composition")
+    composition("composition")
     # composition("apply_literal")
-    composition("apply_language")
+    # composition("apply_language")
 
 
 if __name__ == "__main__":
