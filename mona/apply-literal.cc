@@ -326,6 +326,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<DFA*> dfas_orig(argc - 1);
     unsigned symbol_len, num_of_bits, num_of_symbols;
+    Timer timer;
 
     // Loading and determinizing NFTs
     try {
@@ -343,7 +344,9 @@ int main(int argc, char *argv[]) {
                 assert(num_of_symbols == num_of_symbols_local);
             }
             DFA *dfa = dfaImport(argv[i], NULL, NULL);
+            timer.start();
             dfa = determinize(dfa, symbol_len_local, num_of_symbols_local, nondet);
+            timer.stop();
             dfas_orig[id] = dfa;
         }
     } catch (const std::invalid_argument &e) {
@@ -359,7 +362,6 @@ int main(int argc, char *argv[]) {
 
     // Benchmarking
     ///////////////////////////////////////////////////////////////
-    Timer timer;
     std::vector<DFA*> dfas;
 
     // Project-out first and second symbol benchmarks
