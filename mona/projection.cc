@@ -51,6 +51,8 @@ public:
 
 };
 
+Timer timer;
+
 
 void get_file_info(std::string filename, unsigned &id, unsigned &nondet, unsigned &symbol_len, unsigned &num_of_bits) {
     // filename format ../nfa2mona/0_2_3_6.mona
@@ -256,7 +258,6 @@ DFA *tree_pipe_benchmark(std::vector<DFA*> &dfas, const unsigned symbol_len) {
 }
 
 long project_out_benchmark(DFA* dfa, const unsigned symbol_to_project) {
-    Timer timer;
     timer.start();
     dfa = dfaProject(dfa, symbol_to_project);
     timer.stop();
@@ -323,7 +324,6 @@ int main(int argc, char *argv[]) {
 
     std::vector<DFA*> dfas_orig(argc - 1);
     unsigned symbol_len, num_of_bits, num_of_symbols;
-    Timer timer;
 
     // Loading and determinizing NFTs
     try {
@@ -365,8 +365,14 @@ int main(int argc, char *argv[]) {
     std::vector<DFA*> first_second[2] = { copy_dfa_vector(dfas_orig), copy_dfa_vector(dfas_orig) };
     std::vector<long> times[2] = { std::vector<long>(dfas_orig.size(), 0), std::vector<long>(dfas_orig.size(), 0) };
     for (unsigned i = 0; i < dfas_orig.size(); i++) {
-        times[0][i] = project_out_benchmark(first_second[0][i], 0);
-        times[1][i] = project_out_benchmark(first_second[1][i], 1);
+        times[0][i] = timer.duration_mus;
+        times[1][i] = timer.duration_mus;
+    }
+    timer.reset();
+
+    for (unsigned i = 0; i < dfas_orig.size(); i++) {
+        times[0][i] += project_out_benchmark(first_second[0][i], 0);
+        times[1][i] += project_out_benchmark(first_second[1][i], 1);
     }
     // std::cerr << "PROJECT-OUT BENCHMARK time in \xC2\xB5s" << std::endl;
     // std::cerr << " ID" << "  0-th var" << "  1-st var" << std::endl;
