@@ -24,11 +24,11 @@ import warnings
 
 from plotnine.themes.themeable import legend_key_width
 # in seconds
-TIMEOUT = 120
-TIMEOUT_VAL = TIMEOUT * 1.1
+TIMEOUT = 120_000
+TIMEOUT_VAL = TIMEOUT
 TIME_MIN = 0.01
 
-HEADERS = ["method", "min", "max", "mean", "q(0.25)", "median", "q(0.75)", "std. dev"]
+HEADERS = ["method", "TOs", "min", "max", "mean", "q(0.25)", "median", "q(0.75)", "std. dev"]
 ALL_TOOLS = ["mata", "mona"]
 
 
@@ -38,15 +38,24 @@ def composition_table(df, all_tools, operation):
     print(f"# of formulae: {len(df)}")
 
     summary_times = dict()
-    # for col in df.columns:
-    #     if re.search('-result$', col):
-    #         summary_times[col] = dict()
-    #         summary_times[col]['timeouts'] = df[col].isna().sum()
-    #         df[col] = df[col].str.strip()
+    tos = dict()
+
+    # for column in df.columns:
+    #     if "runtime" in column:
+    #         df[column].fillna(TIMEOUT_VAL, inplace=True)
+    for col in df.columns:
+        if re.search('-runtime', col):
+            tos[col] = dict()
+            tos[col]['tos'] = df[col].isna().sum()
+            # df[col] = df[col].str.strip()
             # summary_times[col]['unknowns'] = df[df[col] == "unknown"].shape[0] #[df[col] == "unknown"].shape[0]
 
+    # print(tos)
+
     # Remove unknowns
-    # df = df.drop(df[df[main_tool + "-result"] == "unknown"].index)
+    for col in df.columns:
+        if re.search('-runtime', col):
+            df = df.drop(df[df[col] == np.nan].index)
     # for tool in all_tools:
     #   df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
 
@@ -60,6 +69,7 @@ def composition_table(df, all_tools, operation):
             summary_times[col]['median'] = df[col].median()
             summary_times[col]['q_075'] = df[col].quantile(0.75)
             summary_times[col]['std'] = df[col].std()
+            summary_times[col]['tos'] = tos[col]['tos']
 
     df_summary_times = pd.DataFrame(summary_times).transpose()
 
@@ -72,6 +82,7 @@ def composition_table(df, all_tools, operation):
         row_dict = dict(row)
         row_dict.update({'name': i})
         tab_interesting.append([row_dict['name'],
+                                row_dict['tos'],
                                 row_dict['min'],
                                 row_dict['max'],
                                 row_dict['mean'],
@@ -79,6 +90,7 @@ def composition_table(df, all_tools, operation):
                                 row_dict['median'],
                                 row_dict['q_075'],
                                 row_dict['std'],
+
                                 # unknown_row['timeouts']
                                 # unknown_row["unknowns"]
                                 ])
@@ -136,15 +148,22 @@ def projection_table(df, all_tools):
     print(f"# of formulae: {len(df)}")
 
     summary_times = dict()
-    # for col in df.columns:
-    #     if re.search('-result$', col):
-    #         summary_times[col] = dict()
-    #         summary_times[col]['timeouts'] = df[col].isna().sum()
-    #         df[col] = df[col].str.strip()
+    tos = dict()
+
+    # for column in df.columns:
+    #     if "runtime" in column:
+    #         df[column].fillna(TIMEOUT_VAL, inplace=True)
+    for col in df.columns:
+        if re.search('-runtime', col):
+            tos[col] = dict()
+            tos[col]['tos'] = df[col].isna().sum()
+            # df[col] = df[col].str.strip()
             # summary_times[col]['unknowns'] = df[df[col] == "unknown"].shape[0] #[df[col] == "unknown"].shape[0]
 
     # Remove unknowns
-    # df = df.drop(df[df[main_tool + "-result"] == "unknown"].index)
+    for col in df.columns:
+        if re.search('-runtime', col):
+            df = df.drop(df[df[col] == np.nan].index)
     # for tool in all_tools:
     #   df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
 
@@ -158,6 +177,7 @@ def projection_table(df, all_tools):
             summary_times[col]['median'] = df[col].median()
             summary_times[col]['q_075'] = df[col].quantile(0.75)
             summary_times[col]['std'] = df[col].std()
+            summary_times[col]['tos'] = tos[col]['tos']
 
     df_summary_times = pd.DataFrame(summary_times).transpose()
 
@@ -171,6 +191,7 @@ def projection_table(df, all_tools):
             row_dict = dict(row)
             row_dict.update({'name': i + '-' + str(tape)})
             tab_interesting.append([row_dict['name'],
+                                    row_dict['tos'],
                                     row_dict['min'],
                                     row_dict['max'],
                                     row_dict['mean'],
@@ -240,9 +261,14 @@ def read_file(filename):
         # na_values=['TO', 'MISSING'],
         # na_values=['TO'],
         )
+    # for column in df_loc.columns:
+    #     if "runtime" in column:
+    #         df_loc[column].fillna(TIMEOUT_VAL, inplace=True)
     for column in df_loc.columns:
         if "runtime" in column:
             df_loc[column] = df_loc[column] / 1_000
+    print(f"Handling {filename}:")
+    print(f"# of instances: {len(df_loc) / 3}")
     return df_loc
 
 # For reading in files
@@ -285,6 +311,10 @@ def scatter_plot(
         df = df.copy(deep=True)
         df.loc[df[xcol] > domain[1], xcol] = domain[1]
         df.loc[df[ycol] > domain[1], ycol] = domain[1]
+
+    for column in df.columns:
+        if "runtime" in column:
+            df[column] = df[column].fillna(TIMEOUT_VAL)
 
     # generate scatter plot
     scatter = p9.ggplot(df)
@@ -370,11 +400,11 @@ def projection():
     transducer_plus_projection_df = transducer_plus_projection_df.groupby(["benchmark", "operation"], as_index=False).mean()
     transducer_plus_projection_df["Benchmark"] = "transducer plus"
 
-    print(webapp_projection_df)
-    print(transducer_plus_projection_df)
+    # print(webapp_projection_df)
+    # print(transducer_plus_projection_df)
 
     projection_df = pd.concat([webapp_projection_df, transducer_plus_projection_df], ignore_index=True)
-    print(projection_df)
+    # print(projection_df)
     # projection_df = webapp_projection_df.append(transducer_plus_projection_df, ignore_index=True)
 
     scatter = scatter_plot(
@@ -406,11 +436,11 @@ def composition(operation):
     transducer_plus_df = transducer_plus_df.groupby(["benchmark", "operation"], as_index=False).mean()
     transducer_plus_df["Benchmark"] = "transducer plus"
 
-    print(webapp_df)
-    print(transducer_plus_df)
+    # print(webapp_df)
+    # print(transducer_plus_df)
 
     df = pd.concat([webapp_df, transducer_plus_df], ignore_index=True)
-    print(df)
+    # print(df)
 
     max_runtime = max(df["mata-runtime"].max(), df["mona-runtime"].max())
     scatter = scatter_plot(
@@ -440,8 +470,10 @@ def main():
 
     projection()
     composition("composition")
-    # composition("apply_literal")
+    composition("apply_literal")
+    composition("apply_literal_backward")
     composition("apply_language")
+    composition("apply_language_backward")
 
 
 if __name__ == "__main__":
