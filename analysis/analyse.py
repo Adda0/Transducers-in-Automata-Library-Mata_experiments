@@ -453,12 +453,6 @@ def composition(operation):
     composition_table(df, ALL_TOOLS, operation)
 
 
-
-
-
-
-
-
 def main():
     parser = argparse.ArgumentParser(
         prog='Analyse experiment results',
@@ -470,6 +464,7 @@ def main():
 
     projection()
     composition("composition")
+    composition("composition_construct_replace")
     composition("apply_literal")
     composition("apply_literal_backward")
     composition("apply_language")

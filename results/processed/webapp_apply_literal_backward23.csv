@@ -1,0 +1,3 @@
+benchmark,operation,mata-runtime,mona-runtime
+../benchmarks/non-incremental-QF_SLIA-20230403-webapp/apply_literal_backward/non-incremental-QF_SLIA-20230403-webapp-lan-rep-lan_replace101-smt2_0.mata,apply_literal,49325,2532
+../benchmarks/non-incremental-QF_SLIA-20230403-webapp/apply_literal_backward/non-incremental-QF_SLIA-20230403-webapp-lan-rep-lan_replace101-smt2_0.mata,apply_literal
