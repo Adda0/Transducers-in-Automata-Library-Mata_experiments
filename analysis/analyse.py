@@ -53,9 +53,9 @@ def composition_table(df, all_tools, operation):
     # print(tos)
 
     # Remove unknowns
-    for col in df.columns:
-        if re.search('-runtime', col):
-            df = df.drop(df[df[col] == np.nan].index)
+    # for col in df.columns:
+    #     if re.search('-runtime', col):
+    #         df = df.drop(df[df[col] == np.nan].index)
     # for tool in all_tools:
     #   df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
 
@@ -164,6 +164,7 @@ def projection_table(df, all_tools):
     for col in df.columns:
         if re.search('-runtime', col):
             df = df.drop(df[df[col] == np.nan].index)
+
     # for tool in all_tools:
     #   df.loc[df[tool + "-result"] == "unknown", tool + '-runtime'] = np.NaN
 
@@ -307,14 +308,17 @@ def scatter_plot(
         # ax_formatter = mizani.label_timedelta(units='us')
     # ax_formatter = mizani.custom_format(lambda x: f"{(result:=/1000)}")
 
+    for column in df.columns:
+        if "runtime" in column:
+            df[column] = df[column].fillna(TIMEOUT_VAL)
+
+    domain[1] = domain[1] * 1.1
+
     if clamp:  # clamp overflowing values if required
         df = df.copy(deep=True)
         df.loc[df[xcol] > domain[1], xcol] = domain[1]
         df.loc[df[ycol] > domain[1], ycol] = domain[1]
 
-    for column in df.columns:
-        if "runtime" in column:
-            df[column] = df[column].fillna(TIMEOUT_VAL)
 
     # generate scatter plot
     scatter = p9.ggplot(df)
@@ -408,7 +412,7 @@ def projection():
     # projection_df = webapp_projection_df.append(transducer_plus_projection_df, ignore_index=True)
 
     scatter = scatter_plot(
-        projection_df, "mata-runtime-0", "mona-runtime-0", [0, 15], xname="Mata [ms]", yname="Mona [ms]",
+        projection_df.copy(deep=True), "mata-runtime-0", "mona-runtime-0", [0, 15], xname="Mata [ms]", yname="Mona [ms]",
         title="Projection to tape 1", log=False, width=12, height=6, clamp=True, tickCount=5, operation="projection",
         tick_scale=1000
     )
@@ -417,7 +421,7 @@ def projection():
 
     max_runtime = max(projection_df["mata-runtime-1"].max(), projection_df["mona-runtime-1"].max())
     scatter = scatter_plot(
-        projection_df, "mata-runtime-1", "mona-runtime-1", [0, 100], xname="Mata [ms]", yname="Mona [ms]",
+        projection_df.copy(deep=True), "mata-runtime-1", "mona-runtime-1", [0, 100], xname="Mata [ms]", yname="Mona [ms]",
         title="Projection to tape 0" , log=False, width=12, height=6, clamp=True, tickCount=5, operation="projection",
         tick_scale=1000
     )
@@ -444,13 +448,33 @@ def composition(operation):
 
     max_runtime = max(df["mata-runtime"].max(), df["mona-runtime"].max())
     scatter = scatter_plot(
-        df, "mata-runtime", "mona-runtime", [0, max_runtime], xname="Mata [ms]", yname="Mona [ms]",
+        df.copy(deep=True), "mata-runtime", "mona-runtime", [0, max_runtime], xname="Mata [ms]", yname="Mona [ms]",
         title=f"{operation.replace('_', ' ').title()}", log=False, width=12, height=6, clamp=True, tickCount=5, operation=operation
     )
     # scatter.show()
     scatter.save(filename=f"plots/{operation}_scatter.pdf", dpi=1000)
 
     composition_table(df, ALL_TOOLS, operation)
+
+def composition_symbol_from_end(operation):
+    df = read_file(f"../results/processed/symbol_from_end_{operation}.csv")
+
+    df = df.groupby(["benchmark", "operation"], as_index=False).mean()
+    df["Benchmark"] = "SymbolFromEnd"
+
+
+    # df = pd.concat([webapp_df, transducer_plus_df], ignore_index=True)
+    # print(df)
+
+    max_runtime = max(df["mata-runtime"].max(), df["mona-runtime"].max())
+    scatter = scatter_plot(
+        df.copy(deep=True), "mata-runtime", "mona-runtime", [0, max_runtime], xname="Mata [ms]", yname="Mona [ms]",
+        title=f"{operation.replace('_', ' ').title()}", log=False, width=12, height=6, clamp=True, tickCount=5, operation=operation
+    )
+    # scatter.show()
+    scatter.save(filename=f"plots/symbol_from_end_{operation}_scatter.pdf", dpi=1000)
+
+    composition_table(df, ALL_TOOLS, "symbol_from_end_" + operation)
 
 
 def main():
@@ -469,6 +493,9 @@ def main():
     composition("apply_literal_backward")
     composition("apply_language")
     composition("apply_language_backward")
+
+    composition_symbol_from_end("construct_replace")
+    composition_symbol_from_end("apply_language")
 
 
 if __name__ == "__main__":
