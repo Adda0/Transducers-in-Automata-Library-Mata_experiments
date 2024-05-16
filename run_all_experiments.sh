@@ -27,3 +27,7 @@
 # Running apply literal backward benchmarks.
 ./run_on_benchmark.py --runs 3 --timeout 120 apply_literal_backward ../benchmarks/non-incremental-QF_SLIA-20230403-webapp/apply_literal_backward/
 ./run_on_benchmark.py --runs 3 --timeout 120 apply_literal_backward ../benchmarks/non-incremental-QF_SLIA-20230331-transducer-plus/apply_literal_backward/
+
+# Running SymbolFromEnd benchmarks.
+./run_on_benchmark.py --runs 3 --timeout 120 composition ../benchmarks/symbol_from_end_nondet/construct_replace
+./run_on_benchmark.py --runs 3 --timeout 120 apply_language ../benchmarks/symbol_from_end_nondet/apply_language
